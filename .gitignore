@@ -1,0 +1,17 @@
+# Secrets
+.env
+
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Generated database (rebuild with: python scripts/create_database.py)
+data/*.db
+
+# Editors / OS
+.vscode/
+.DS_Store
