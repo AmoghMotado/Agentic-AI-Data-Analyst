@@ -6,10 +6,10 @@ from src.schema import get_dataset_info, get_schema_text
 
 def test_tables_and_row_counts():
     info = get_dataset_info()
-    assert info["customers"] == 120
-    assert info["products"] == 25
-    assert info["orders"] == 400
-    assert 400 < info["order_items"] < 1600
+    assert info["tables"]["customers"] == 120
+    assert info["tables"]["products"] == 25
+    assert info["tables"]["orders"] == 400
+    assert 400 < info["tables"]["order_items"] < 1600
 
 
 def test_joins_work():

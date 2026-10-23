@@ -17,13 +17,14 @@ from src.sql_validator import clean_sql, validate_sql
 
 
 @tool
-def execute_sql(query: str) -> dict:
-    """Run one read-only SQLite SELECT query on the NovaMart sales database and return the rows."""
+def execute_sql(query: str, db_path: str = "") -> dict:
+    """Run one read-only SQLite SELECT query on the active database and return the rows.
+    db_path is the database file; leave it empty to use the built-in sample database."""
     is_valid, reason = validate_sql(query)
     if not is_valid:
         return {"ok": False, "error": f"Blocked: {reason}", "columns": [], "rows": [], "truncated": False}
     try:
-        columns, rows, truncated = run_query(clean_sql(query))
+        columns, rows, truncated = run_query(clean_sql(query), db_path=db_path or None)
         return {"ok": True, "error": "", "columns": columns, "rows": rows, "truncated": truncated}
     except Exception as exc:  # e.g. "no such column: revenue"
         return {"ok": False, "error": str(exc).split("\n")[0], "columns": [], "rows": [], "truncated": False}
