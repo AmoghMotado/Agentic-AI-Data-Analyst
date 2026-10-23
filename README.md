@@ -24,6 +24,7 @@ The app turns a natural-language question into a SQL query using an LLM that is 
 - Pandas facts (highest, lowest, total, share, trend) feed the insight, so the LLM does not do arithmetic
 - Automatic bar/line chart or KPI value
 - Debug mode showing which workflow steps ran
+- Upload your own data from the page: a SQLite database or CSV files
 
 ## Architecture
 
@@ -111,10 +112,11 @@ agentic-ai-data-analyst/
 │   ├── sql_generator.py    LLM calls (SQL + insight)
 │   ├── sql_validator.py    safety checks
 │   ├── tools.py            execute_sql LangChain tool
+│   ├── uploads.py          turns uploaded SQLite/CSV files into a database
 │   ├── analysis.py         Pandas analysis + chart choice
 │   ├── visualization.py    Streamlit charts
 │   └── graph.py            LangGraph agent
-└── tests/                  37 tests, no API key needed
+└── tests/                  50 tests, no API key needed
 ```
 
 ## Setup (Windows, VS Code)
@@ -174,6 +176,15 @@ Run the tests (no API key or internet needed; LLM calls are mocked):
 python -m pytest
 ```
 
+## Using Your Own Data
+
+The app starts on the NovaMart sample. To analyse your own data, use **Upload your own data** at the top of the sidebar:
+
+- **One SQLite file** (`.db`, `.sqlite`, `.sqlite3`): used as it is.
+- **One or more CSV files**: each file becomes one table. Names are simplified for SQL, so `Store Sales.csv` with a column `Sales Amount` becomes table `store_sales` with column `sales_amount`.
+
+The file is saved on the server running Streamlit, in `data/uploads/` (ignored by git), and opened read-only, so the same safety rules apply. The sidebar lists the tables and row counts. For uploaded data the LLM gets the real tables and columns, row counts and example values of short text columns, but no business notes, so clear column names give better answers. Remove the file in the uploader to go back to the sample data.
+
 ## Example Questions
 
 1. What is the total revenue?
@@ -207,4 +218,4 @@ Add screenshots to a `screenshots/` folder and link them here.
 - Few-shot examples or retrieval of similar past questions to improve SQL accuracy
 - A SQL parser (e.g. sqlglot) instead of keyword checks
 - Evaluation set with expected results to measure accuracy
-- Support for uploading a CSV and querying it
+- Excel (.xlsx) uploads and a size limit per upload

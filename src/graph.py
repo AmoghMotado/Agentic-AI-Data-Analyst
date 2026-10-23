@@ -22,13 +22,14 @@ from src import sql_generator
 from src.analysis import analyze, choose_chart, facts_to_text, to_dataframe
 from src.config import MAX_RETRIES, get_api_key
 from src.database import database_exists
-from src.schema import get_schema_text
+from src.schema import get_schema_text, is_sample_database
 from src.sql_validator import clean_sql, validate_sql
 from src.tools import execute_sql
 
 
 class AgentState(TypedDict, total=False):
     question: str        # the user's question (needed by every LLM step)
+    db_path: str         # database file to analyse ("" = built-in sample)
     schema: str          # schema text that grounds the LLM in real tables/columns
     status: str          # answerable | ambiguous | unsupported | error | done
     sql: str             # latest generated SQL (shown in the UI)
@@ -49,7 +50,7 @@ class AgentState(TypedDict, total=False):
 # ---------------------------------------------------------------------------
 
 def get_schema_node(state):
-    return {"schema": get_schema_text(), "steps": state["steps"] + ["get_schema"]}
+    return {"schema": get_schema_text(state.get("db_path") or None), "steps": state["steps"] + ["get_schema"]}
 
 
 def generate_sql_node(state):
@@ -81,7 +82,7 @@ def validate_sql_node(state):
 
 def execute_sql_node(state):
     # Tool calling: the graph invokes the LangChain database tool
-    result = execute_sql.invoke({"query": state["sql"]})
+    result = execute_sql.invoke({"query": state["sql"], "db_path": state.get("db_path", "")})
     return {
         "columns": result["columns"],
         "rows": result["rows"],
@@ -105,9 +106,13 @@ def generate_insight_node(state):
                 "final_answer": "The query ran successfully but returned no matching data."}
 
     df = to_dataframe(state["columns"], state["rows"])
+    if is_sample_database(state.get("db_path") or None):
+        money_rule = "Show money in Indian Rupees with the ₹ symbol."
+    else:
+        money_rule = "Do not add a currency symbol unless the column names or question make the currency clear."
     try:
         insight = sql_generator.generate_insight(
-            state["question"], state["sql"], df.head(20).to_string(index=False), facts_to_text(facts)
+            state["question"], state["sql"], df.head(20).to_string(index=False), facts_to_text(facts), money_rule
         )
     except Exception:
         # The data is still correct; fall back to a plain summary instead of failing
@@ -174,8 +179,11 @@ def build_graph():
 _app = None
 
 
-def run_analysis(question):
-    """Entry point used by the UI. Always returns a state dict; never raises."""
+def run_analysis(question, db_path=None):
+    """
+    Entry point used by the UI. Always returns a state dict; never raises.
+    db_path: the database to analyse (an uploaded file); None = built-in sample.
+    """
     global _app
     question = (question or "").strip()
     if not question:
@@ -183,14 +191,14 @@ def run_analysis(question):
     if not get_api_key():
         return {"status": "error", "steps": [],
                 "final_answer": "OpenAI API key is missing. Add OPENAI_API_KEY to your .env file and restart."}
-    if not database_exists():
-        return {"status": "error", "steps": [],
-                "final_answer": "Database not found. Run: python scripts/create_database.py"}
+    if not database_exists(db_path):
+        hint = "Please upload it again." if db_path else "Run: python scripts/create_database.py"
+        return {"status": "error", "steps": [], "final_answer": f"Database not found. {hint}"}
 
     if _app is None:
         _app = build_graph()
     try:
-        return _app.invoke({"question": question, "retry_count": 0, "steps": []})
+        return _app.invoke({"question": question, "db_path": str(db_path or ""), "retry_count": 0, "steps": []})
     except Exception as exc:
         return {"status": "error", "final_answer": f"Something went wrong: {exc}", "steps": []}
 

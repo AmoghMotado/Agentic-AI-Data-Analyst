@@ -12,6 +12,9 @@ __pycache__/
 # Generated database (rebuild with: python scripts/create_database.py)
 data/*.db
 
+# Databases uploaded from the Streamlit page
+data/uploads/
+
 # Editors / OS
 .vscode/
 .DS_Store

@@ -14,6 +14,9 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 DB_PATH = PROJECT_ROOT / "data" / "sales.db"
 
+# Databases uploaded from the Streamlit page are saved here
+UPLOAD_DIR = PROJECT_ROOT / "data" / "uploads"
+
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.4-mini")
 
 # How many times the agent may ask the LLM to correct a failed query

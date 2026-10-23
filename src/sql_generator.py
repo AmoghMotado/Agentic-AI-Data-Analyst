@@ -55,10 +55,10 @@ def generate_sql(question, schema, previous_sql="", error=""):
     return structured_llm.invoke(messages)
 
 
-def generate_insight(question, sql, table_text, facts_text):
+def generate_insight(question, sql, table_text, facts_text, money_rule=""):
     """Asks the LLM to explain the result in 1-3 sentences, using only the given facts."""
     messages = [
-        SystemMessage(content=INSIGHT_SYSTEM_PROMPT),
+        SystemMessage(content=INSIGHT_SYSTEM_PROMPT.format(money_rule=money_rule)),
         HumanMessage(content=INSIGHT_USER_PROMPT.format(
             question=question, sql=sql, table=table_text, facts=facts_text
         )),
